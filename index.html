@@ -17,7 +17,7 @@
 </style></head><body>
 <div class="wrap">
 <header><div><h1>買い物メモ</h1><p>必要なものを、忘れずに。</p></div><div class="mark" aria-hidden="true">🛒</div></header>
-<section class="card"><form id="add-form"><div class="fieldrow"><input id="name" aria-label="買うもの" placeholder="買うものを入力（例：牛乳）" autocomplete="off" maxlength="60" required><button type="submit">追加</button></div><div class="selectrow"><select id="store" aria-label="買い物先"><option>ドラッグストア</option><option>１００均</option><option>スーパー</option><option>その他</option></select></div></form></section>
+<section class="card"><form id="add-form"><div class="fieldrow"><input id="shopping-item-input" name="shopping-item" type="text" aria-label="買うもの" placeholder="買うものを入力（例：牛乳）" autocomplete="off" maxlength="60" required><button type="submit">追加</button></div><div class="selectrow"><select id="store" aria-label="買い物先"><option>ドラッグストア</option><option>１００均</option><option>スーパー</option><option>その他</option></select></div></form></section>
 <section class="card"><div class="headrow"><h2>買い物リスト</h2><span class="counts" id="count"></span></div><div class="tabs" id="tabs" aria-label="買い物先の絞り込み"></div><p class="reorder-hint">☰ を指で上下に動かすと並び替えできます（同じ店舗・購入状態の中）。購入済みの商品は自動で下に移動します。商品の×を間違えて押したら「元に戻す」を選べます。</p><div id="items" aria-live="polite"></div><div class="progress"><div class="bar" id="bar"></div></div><div class="counts" id="status"></div><div class="buttons"><button type="button" id="remove-done" class="secondary">✓ 購入済みを削除</button><button type="button" id="clear-all" class="danger">すべて削除</button></div></section>
 <section class="card"><div class="headrow"><h2>よく買うもの</h2><span class="sub">タップでリストに追加</span></div><div id="favorites" class="chips"></div><div class="buttons"><button type="button" class="secondary" id="favorite-from-list">リストから定番に登録</button></div><p class="savehint">商品をリストに追加すると、その商品が定番候補として表示されます。不要な定番は × を押し、確認画面で「OK」を選ぶと削除できます。</p></section>
 <section class="card"><div class="headrow"><h2>データのバックアップ</h2><span class="sub">買い替え・万一の消去に備える</span></div>
@@ -220,7 +220,7 @@ function render(){
     chip.append(addBtn,remove);fav.append(chip);
   })}
 }
-$('add-form').onsubmit=e=>{e.preventDefault();add($('name').value,$('store').value);$('name').value='';$('name').focus()};
+$('add-form').onsubmit=e=>{e.preventDefault();add($('shopping-item-input').value,$('store').value);$('shopping-item-input').value='';$('shopping-item-input').focus()};
 $('remove-done').onclick=()=>{
   const targets=model.items.filter(x=>x.done&&(model.filter==='すべて'||x.store===model.filter));
   if(!targets.length)return;
