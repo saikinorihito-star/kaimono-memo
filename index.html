@@ -101,7 +101,7 @@ function add(name,store){name=name.trim();if(!name)return;const found=model.item
 function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e}
 // 同じ店舗・購入状態の中でだけ並び替えできるようにする。
 // 保存する配列そのものの順序を変更するので、旧バージョンの保存データをそのまま利用可能。
-function displayOrder(a,b){return Number(!!a.done)-Number(!!b.done)||storeOrder.indexOf(a.store)-storeOrder.indexOf(b.store)||model.items.indexOf(a)-model.items.indexOf(b)}
+function displayOrder(a,b,orderIndex){return Number(!!a.done)-Number(!!b.done)||storeOrder.indexOf(a.store)-storeOrder.indexOf(b.store)||orderIndex.get(a)-orderIndex.get(b)}
 let activeDrag=null;
 function startDrag(e,item,row,handle){
   if(activeDrag||e.isPrimary===false||(e.pointerType==='mouse'&&e.button!==0))return;
@@ -160,10 +160,14 @@ function finishDrag(e,cancelled=false){
 function render(){
   const tabs=$('tabs');tabs.replaceChildren();
   stores.forEach(s=>{let b=el('button','tab'+(model.filter===s?' active':''),s);b.type='button';b.onclick=()=>{model.filter=s;render()};tabs.append(b)});
-  const visible=model.items.filter(x=>model.filter==='すべて'||x.store===model.filter).sort(displayOrder);
-  $('items').replaceChildren();
+  // 先に並び順をMap化し、比較のたびに配列全体を検索しない。
+  const orderIndex=new Map(model.items.map((item,index)=>[item,index]));
+  const visible=model.items.filter(x=>model.filter==='すべて'||x.store===model.filter).sort((a,b)=>displayOrder(a,b,orderIndex));
+  const itemList=$('items');itemList.replaceChildren();
   if(!visible.length){$('items').append(el('div','empty','まだ商品がありません。上から追加してください。'))}
   else{
+    // DOMをまとめて追加し、商品数が多い場合の初期描画負荷を抑える。
+    const fragment=document.createDocumentFragment();
     visible.forEach(item=>{
       const row=el('div','entry');row.dataset.itemId=item.id;
       const check=el('input','check');check.type='checkbox';check.checked=!!item.done;
@@ -195,8 +199,9 @@ function render(){
       let rem=el('button','mini','×');rem.type='button';
       rem.setAttribute('aria-label',item.name+'を削除');
       rem.onclick=()=>deleteWithUndo(item);
-      row.append(check,body,handle,rem);$('items').append(row);
+      row.append(check,body,handle,rem);fragment.append(row);
     });
+    itemList.append(fragment);
   }
   const all=model.items.length,done=model.items.filter(x=>x.done).length;
   $('count').textContent=all+'件';
@@ -233,5 +238,12 @@ $('remove-done').onclick=()=>{
 };
 $('clear-all').onclick=()=>{if(!confirm('買い物リストをすべて削除しますか？（定番商品は残ります）'))return;clearUndo();model.items=[];save();render();message('リストを削除しました')};
 $('favorite-from-list').onclick=()=>{let count=0;for(const x of model.items){if(!model.favorites.some(f=>f.name===x.name&&f.store===x.store)){model.favorites.push({id:id(),name:x.name,store:x.store});count++}}save();render();message(count?count+'件を定番に登録しました':'新しい商品はありません')};
-render();})();
+render();
+// 起動時のネットワーク待ちを減らすため、画面描画後にオフラインキャッシュを登録する。
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('オフライン準備に失敗',err));
+  },{once:true});
+}
+})();
 </script></body></html>
